@@ -76,7 +76,7 @@ export const GeneratePosts = ({
             type="date"
             id="date"
             onChange={(e) => {
-              onDateFromSet(e.target.value);
+              onDateFromSet(e.target.value.replace("-", "/"));
             }}
             className=" rounded-2xl darkBG p-3 lightText text-xl scheme-dark"
           />
@@ -94,7 +94,7 @@ export const GeneratePosts = ({
             type="date"
             id="date"
             onChange={(e) => {
-              onDateTillSet(e.target.value);
+              onDateTillSet(e.target.value.replace("-", "/"));
             }}
             className=" rounded-2xl darkBG p-3 lightText text-xl scheme-dark"
           />

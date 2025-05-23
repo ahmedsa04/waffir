@@ -169,6 +169,16 @@ const page = () => {
               backgroundPosition: "center",
             }}
           >
+            <div className=" flex absolute top-[66px] right-2">
+              <h1 className=" font-bold text-black text-base mx-0.5">
+                {dateTill}
+              </h1>
+              <h1 className=" font-bold text-black text-lg mx-0.5">إلى</h1>
+              <h1 className=" font-bold text-black text-base mx-0.5">
+                {dateFrom}
+              </h1>
+              <h1 className=" font-bold text-black text-lg mx-0.5">من</h1>
+            </div>
             <div className=" absolute left-[34%] top-32 w-48 py-1 bg-[#ffb120] rounded-full">
               <h1 className=" text-3xl text-black font-bold text-center align-middle">
                 {items && items[currentExportIndex].category}
@@ -249,7 +259,7 @@ const page = () => {
                                       : count == 2
                                       ? "w-72 -bottom-8 left-[15%]"
                                       : count == 1
-                                      ? "w-72 top-[30%] left-[25%]"
+                                      ? "w-72 top-[30%] left-[26%]"
                                       : ""
                                   }`
                                 : `${
@@ -283,8 +293,9 @@ const page = () => {
                               count <= 2 || (count == 3 && index == 2) ? "" : ""
                             } p-2 w-fit h-fit absolute bottom-2 right-2`}
                           >
+                            <hr className=" relative -rotate-12 mx-auto z-50 w-[70%] -mb-[15%] h-1 bg-red-600 rounded-full" />
                             <h1
-                              className={`font-semibold text-black  text-center ${
+                              className={`font-semibold text-white  text-center ${
                                 count <= 2 || (count == 3 && index == 2)
                                   ? "text-2xl"
                                   : "text-base"
