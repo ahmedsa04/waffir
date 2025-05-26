@@ -8,6 +8,9 @@ import Image from "next/image";
 import { GeneratePosts } from "@/components/GeneratePosts";
 import template from "../../public/waffir-template.png";
 import itemImage from "../../public/مخلل-الزهرة-الحمراء.png";
+import cancelIcon from "../../public/cancel.svg";
+import arrowForward from "../../public/arrow_forward.svg";
+import arrowBack from "../../public/arrow_back.svg";
 
 const awaitNextPaint = () => {
   return new Promise((resolve) => {
@@ -28,7 +31,11 @@ function groupAndBalanceItems(items) {
     if (item.القسم) {
       // Start a new group
       if (currentGroup.length > 0) {
-        categoryGroups.push({ category: currentCategory, items: currentGroup });
+        categoryGroups.push({
+          out: [],
+          category: currentCategory,
+          items: currentGroup,
+        });
       }
       currentCategory = item.القسم;
       currentGroup = [item];
@@ -38,7 +45,11 @@ function groupAndBalanceItems(items) {
   }
   // Push the last group
   if (currentGroup.length > 0) {
-    categoryGroups.push({ category: currentCategory, items: currentGroup });
+    categoryGroups.push({
+      out: [],
+      category: currentCategory,
+      items: currentGroup,
+    });
   }
 
   const result = [];
@@ -49,7 +60,11 @@ function groupAndBalanceItems(items) {
     const items = group.items;
 
     for (let i = 0; i < items.length; i += 6) {
-      chunks.push({ category: group.category, items: items.slice(i, i + 6) });
+      chunks.push({
+        out: [],
+        category: group.category,
+        items: items.slice(i, i + 6),
+      });
     }
 
     // STEP 3: Balance small chunks (less than 4 items)
@@ -120,11 +135,38 @@ const page = () => {
       return () => clearTimeout(timeout);
     }
   }, [currentExportIndex, isExporting]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        cardRef.current &&
+        !cardRef.current.contains(event.target) &&
+        cancelRef.current &&
+        !cancelRef.current.contains(event.target) &&
+        editRef.current &&
+        !editRef.current.contains(event.target)
+      ) {
+        setFocused(false); // Click outside: deactivate
+        setFocusedIdx(null); // Reset focused index
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   const [dateFrom, setDateFrom] = useState("");
   const [dateTill, setDateTill] = useState("");
+  const cancelRef = useRef(null);
+  const cardRef = useRef(null);
+  const editRef = useRef(null);
+  const [focused, setFocused] = useState(false);
+  const [focusedIdx, setFocusedIdx] = useState(null);
+  const [pocket, setPocket] = useState([]);
   const [succeeded, setSucceded] = useState(false);
   const [fileName, setFileName] = useState(null);
-  console.log(dateFrom, dateTill);
   const downloadAllPng = () => {
     zipRef.current = new JSZip();
     setIsExporting(true);
@@ -147,13 +189,10 @@ const page = () => {
         category: "AWFSA",
         items: ITEMS[8].items.filter((item, idx) => idx == 0),
       });
-      console.log(ITEMS);
       setItems(ITEMS);
     }
   }, [data]);
-
-  items && console.log(items[3]);
-
+  items && console.log(items);
   return (
     <div className=" w-full h-screen flex">
       <div className=" relative w-1/2 h-full bg-gradient-to-t from-[#1E1E1E] to-[#2E2E2E]">
@@ -161,7 +200,6 @@ const page = () => {
           <div
             id="capture-area"
             className=" relative w-[600px] h-[750px]"
-            onClick={() => convert()}
             style={{
               backgroundImage: `url(${template.src})`,
               backgroundRepeat: "no-repeat",
@@ -210,12 +248,70 @@ const page = () => {
 
                     return (
                       <div
+                        ref={cardRef}
+                        onClick={() => {
+                          setFocused(true);
+                          setFocusedIdx(index);
+                        }}
                         key={index}
                         className={`
               col-span-0 ${colSpan === 2 ? "col-span-2" : "col-span-1"}
-              relative rounded-3xl w-full h-full bg-[#f9f9e7] text-black
+               hover:cursor-pointer relative rounded-3xl w-full h-full bg-[#f9f9e7] text-black ${
+                 focused && focusedIdx == index
+                   ? "outline-[#537dc6] outline-3"
+                   : ""
+               }
             `}
                       >
+                        {focused && focusedIdx == index && (
+                          <div
+                            ref={cancelRef}
+                            onClick={() => {
+                              // Step 1: Extract itemToDelete BEFORE doing any setState
+                              const itemToDelete =
+                                items?.[idx]?.items?.[focusedIdx];
+
+                              if (!itemToDelete) {
+                                console.warn("Item to delete is undefined", {
+                                  idx,
+                                  focusedIdx,
+                                  items,
+                                });
+                                return;
+                              }
+
+                              // Step 2: Update pocket state
+                              setPocket((prevPocket) => [
+                                ...prevPocket,
+                                itemToDelete,
+                              ]);
+
+                              // Step 3: Update items without mutating nested state
+                              setItems((prevItems) => {
+                                const updated = [...prevItems];
+                                updated[idx] = {
+                                  ...updated[idx],
+                                  items: updated[idx].items.filter(
+                                    (_, i) => i !== focusedIdx
+                                  ),
+                                };
+                                return updated;
+                              });
+
+                              // Step 4: Reset focused state
+                              setFocusedIdx(null);
+                              setFocused(false);
+                            }}
+                            className="absolute -top-2 -right-2 w-fit h-fit p-[1px] bg-[#f9f9e7] rounded-full"
+                          >
+                            <Image
+                              src={cancelIcon}
+                              alt="cancel"
+                              className=" w-6 h-6 hover:cursor-pointer"
+                              onClick={() => {}}
+                            />
+                          </div>
+                        )}
                         {/* card content stays the same */}
                         <div className="flex justify-between p-4">
                           <h1
@@ -293,7 +389,7 @@ const page = () => {
                               count <= 2 || (count == 3 && index == 2) ? "" : ""
                             } p-2 w-fit h-fit absolute bottom-2 right-2`}
                           >
-                            <hr className=" relative -rotate-12 mx-auto z-50 w-[70%] -mb-[15%] h-1 bg-red-600 rounded-full" />
+                            <hr className=" relative -rotate-12 mx-auto z-50 w-[70%] -mb-[15%] h-0.5 bg-red-600 rounded-full" />
                             <h1
                               className={`font-semibold text-white  text-center ${
                                 count <= 2 || (count == 3 && index == 2)
@@ -326,15 +422,28 @@ const page = () => {
             </div>
           </div>
         </div>
+        <div className=" darkBG flex items-center justify-between absolute bottom-4 right-[50%] rounded-full p-2">
+          <Image
+            className=" hover:cursor-pointer w-6 h-6 mx-1"
+            onClick={() => {
+              idx == 0 ? setIdx(items.length) : setIdx(idx - 1);
+            }}
+            src={arrowBack}
+            alt="next"
+          />
+          <h1 className=" text-lg lightText ">
+            {idx + 1} / {items ? items.length : 1}
+          </h1>
+          <Image
+            className=" hover:cursor-pointer w-6 h-6 mx-1 "
+            onClick={() => {
+              idx == items.length - 1 ? setIdx(0) : setIdx(idx + 1);
+            }}
+            src={arrowForward}
+            alt="next"
+          />
+        </div>
 
-        <h1
-          className=" absolute bottom-4 right-[50%] lightText text-3xl rounded-3xl p-2 font-bold darkBG"
-          onClick={() => {
-            idx == items.length - 1 ? setIdx(0) : setIdx(idx + 1);
-          }}
-        >
-          {">"}
-        </h1>
         <h1
           className=" absolute bottom-4 right-[10%] lightText text-2xl rounded-3xl p-1 font-bold darkBG"
           onClick={() => {
@@ -345,75 +454,18 @@ const page = () => {
           Download All
         </h1>
       </div>
-      <div className=" relative w-1/2 h-full bg-[#1E1E1E] py-16 p-16">
-        <GeneratePosts
-          onDateFromSet={setDateFrom}
-          onDateTillSet={setDateTill}
-          onDataChange={setData}
-          items={items}
-        />
-
-        <h1 className=" w-full grayText text-start text-lg font-medium pb-2 pt-6">
-          Edit selected product details
-        </h1>
-
-        <input
-          type="text"
-          id="text"
-          placeholder="Title"
-          className=" rounded-2xl grayText darkBG p-3 lightText text-xl scheme-dark"
-        />
-        <div className="w-fit h-fit flex">
-          <div>
-            <h1 className=" w-full grayText text-start text-lg font-medium pb-2 pt-4">
-              Original Price
-            </h1>
-            <input
-              type="number"
-              id="number1"
-              className=" max-w-24 rounded-2xl grayText darkBG p-3 lightText text-xl scheme-dark"
-            />
-          </div>
-          <div className=" mx-10">
-            <h1 className=" w-full grayText text-start text-lg font-medium pb-2 pt-4">
-              Discounted Price
-            </h1>
-            <input
-              type="number"
-              id="number2"
-              className=" max-w-24 rounded-2xl grayText darkBG p-3 lightText text-xl scheme-dark"
-            />
-          </div>
-        </div>
-        <div className="w-fit h-fit flex">
-          <div>
-            <h1 className=" text-center w-full grayText  text-lg font-medium pb-2 pt-2">
-              Unit
-            </h1>
-            <select className=" max-w-28 hover:bg-neutral-500 h-11 darkBG rounded-2xl cursor-pointer lightText text-lg p-2">
-              <option className=" darkBG p-3 lightText text-xl scheme-dark">
-                ---
-              </option>
-              <option className=" darkBG p-3 lightText text-xl scheme-dark">
-                KG
-              </option>
-              <option className=" darkBG p-3 lightText text-xl scheme-dark">
-                QTR
-              </option>
-            </select>
-          </div>
-          <div className=" mx-16">
-            <h1 className=" text-center w-full grayText  text-lg font-medium pb-2 pt-2">
-              Metric
-            </h1>
-            <input
-              type="number"
-              id="number3"
-              className=" max-w-24 rounded-2xl grayText darkBG p-2 lightText text-xl scheme-dark"
-            />
-          </div>
-        </div>
-      </div>
+      <GeneratePosts
+        onDateFromSet={setDateFrom}
+        onDateTillSet={setDateTill}
+        onDataChange={setData}
+        items={items}
+        pocket={pocket}
+        setPocket={setPocket}
+        setItems={setItems}
+        index={idx}
+        focusedIndex={focusedIdx}
+        editRef={editRef}
+      />
     </div>
   );
 };
