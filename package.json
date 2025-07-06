@@ -1,0 +1,39 @@
+{
+  "name": "gray-matter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@apollo/client": "^3.13.8",
+    "@hcorta/react-to-image": "^1.0.0",
+    "@hugocxl/react-to-image": "^0.0.9",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/auth-helpers-react": "^0.5.0",
+    "@supabase/storage-js": "^2.7.3",
+    "@supabase/supabase-js": "^2.50.0",
+    "convert-svg-to-png": "^0.6.4",
+    "dotenv": "^16.5.0",
+    "file-saver": "^2.0.5",
+    "form-data": "^4.0.3",
+    "fs": "^0.0.1-security",
+    "jsonwebtoken": "^9.0.2",
+    "jszip": "^3.10.1",
+    "next": "15.3.1",
+    "node-fetch": "^3.3.2",
+    "path": "^0.12.7",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "supabase": "^2.26.9",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "tailwindcss": "^4"
+  }
+}
