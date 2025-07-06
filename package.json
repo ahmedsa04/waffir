@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "postinstall": "npm rebuild --platform=linux --arch=x64",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
