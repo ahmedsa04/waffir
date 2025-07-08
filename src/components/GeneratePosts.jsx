@@ -18,12 +18,32 @@ export const GeneratePosts = ({
   focusedIndex,
   editRef,
   TypeFace,
+  dialogRef,
+  onShowDialog,
+  showDialog,
+  setShowDialog,
 }) => {
   const [succeeded, setSucceded] = useState(false);
   const [barcodes, setbarcodes] = useState(false);
   const [prices, setPrices] = useState([]);
   const [fileName, setFileName] = useState(null);
+
   const unit = ["G", "KG", "L", "ML", "PK"];
+  items && console.log(items[0].items[0]);
+  async function sendData() {
+    const { data, error } = await supabase.rpc("update_product_by_barcode", {
+      p_id: items[index].items[focusedIndex].id,
+      p_barcode: null,
+      p_name: items[index].items[focusedIndex].name,
+      p_unit: items[index].items[focusedIndex].unit,
+      p_metric: items[index].items[focusedIndex].metric,
+      p_image: null,
+      p_category_id: null,
+    });
+    if (error) {
+      console.error("❌ Error updating product:", error.message);
+    }
+  }
   function format(date) {
     var d = date.split("-");
     var str = "";
@@ -43,7 +63,11 @@ export const GeneratePosts = ({
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
-      const formattedData = jsonData.slice(1); // Skip the first row if it's a header
+      const formattedData = jsonData.slice(1); // Skip the first row if it's a headeri
+      if (!formattedData[0]["الباركود "]) {
+        onShowDialog(true);
+        return;
+      }
       setPrices(
         formattedData.map((item) => {
           return {
@@ -52,6 +76,7 @@ export const GeneratePosts = ({
           };
         })
       );
+
       setbarcodes(formattedData.map((item) => item["الباركود "]));
       setSucceded(true);
       setFileName(name);
@@ -75,8 +100,34 @@ export const GeneratePosts = ({
 
     fetchProducts();
   }, [barcodes]);
+
+  useEffect(() => {
+    if (showDialog) {
+      dialogRef.current.showModal();
+      setTimeout(() => {
+        dialogRef.current.close();
+        onShowDialog(false);
+      }, 5000);
+    }
+  }, [showDialog]);
+
   return (
     <div className=" relative w-1/2 h-full bg-[#1E1E1E] py-24 p-24">
+      <dialog
+        className=" absolute left-1/2 ease-in transform duration-1000 -translate-x-1/2 top-4  bg-transparent "
+        ref={dialogRef}
+      >
+        {
+          <div className=" popup !outline-none bg-[#270909] border-red-900 flex p-1 pr-4 rounded-full">
+            <div className="  w-fit h-fit max-h-12 max-w-12 font-semibold rounded-full overflow-hidden">
+              <div className="loader "></div>
+            </div>
+            <h1 className="popup_text lightText text-base mx-4 my-auto">
+              file is improperly formatted or empty
+            </h1>
+          </div>
+        }
+      </dialog>
       <h1
         className={` ${TypeFace.className} w-full lightText text-center text-2xl font-medium pb-4`}
       >
@@ -217,6 +268,7 @@ export const GeneratePosts = ({
               };
               return updated;
             });
+            sendData();
           }}
           className=" rounded-2xl grayText darkBG p-3 lightText text-xl scheme-dark"
         />
@@ -287,6 +339,7 @@ export const GeneratePosts = ({
                   };
                   return updated;
                 });
+                sendData();
               }}
               className=" max-w-28 hover:bg-neutral-500 h-11 darkBG rounded-2xl cursor-pointer lightText text-lg p-2"
             >
@@ -324,6 +377,7 @@ export const GeneratePosts = ({
                   };
                   return updated;
                 });
+                sendData();
               }}
               className=" max-w-24 rounded-2xl grayText darkBG p-2 lightText text-xl scheme-dark"
             />

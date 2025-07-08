@@ -22,6 +22,40 @@ const page = () => {
   const [showDialog, setShowDialog] = useState(false);
   const [dialogMessage, setDialogMessage] = useState("");
   const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const barcodeRef = useRef(null);
+  const titleRef = useRef(null);
+  const categoryRef = useRef(null);
+
+  function handleReset() {
+    if (titleRef.current) {
+      titleRef.current.value = null;
+    }
+    if (barcodeRef.current) {
+      barcodeRef.current.value = null;
+    }
+    if (categoryRef.current) {
+      categoryRef.current.value = null;
+    }
+    setTitle("--- ----");
+    setBarcode("000000000000");
+    setImage(null);
+    setCategory("-------");
+    setUnit("--");
+    setMetric("--");
+    setCID(1);
+    setPID(null);
+    setCategory(null);
+    setToggleEdit(false);
+    setToggleSearch(false);
+    setToggleAdd(true);
+  }
+
+  useEffect(() => {
+    // Reset the form when the component mounts
+    if (toggleAdd) {
+      handleReset();
+    }
+  }, [handleReset]);
   async function handleSearch() {
     setLoading(true);
     const { data, error } = await supabase.rpc("get_product_by_identifier", {
@@ -138,7 +172,7 @@ const page = () => {
       }, 5000);
     }
   }, [showDialog, showErrorDialog]);
-
+  toggleAdd && console.log(barcode);
   return (
     <div className=" w-full h-screen bg-[#2E2E2E] p-24 relative">
       <dialog
@@ -175,13 +209,7 @@ const page = () => {
         <div className=" flex justify-center">
           <h1
             onClick={() => {
-              setToggleAdd(true);
-              setTitle(null);
-              setBarcode(null);
-              setImage(null);
-              setCategory(null);
-              setToggleEdit(false);
-              setToggleSearch(false);
+              handleReset();
             }}
             className={`lightText cursor-pointer text-xl font-light rounded-2xl mx-2 p-2 mt-4 ${
               toggleAdd ? "border-b px-4 border-white" : ""
@@ -239,6 +267,7 @@ const page = () => {
                     onChange={(e) => {
                       setTitle(e.target.value);
                     }}
+                    ref={titleRef}
                     type="text"
                     className=" focus:outline-0 w-full rounded-2xl lightText darkBG p-2 lightText text-xl scheme-dark"
                   />
@@ -256,6 +285,7 @@ const page = () => {
                   onChange={(e) => {
                     setBarcode(e.target.value);
                   }}
+                  ref={barcodeRef}
                   type="text"
                   className=" focus:outline-0 w-full rounded-2xl lightText darkBG p-2 lightText text-xl scheme-dark"
                 />
@@ -273,10 +303,12 @@ const page = () => {
                     onChange={(e) => {
                       setCID(e.target.value);
                     }}
+                    ref={categoryRef}
                     className="focus:outline-0  min-w-64 max-w-80 hover:bg-neutral-800 h-11 darkBG rounded-2xl cursor-pointer lightText text-lg p-2"
                   >
                     <option
                       disabled
+                      defaultChecked
                       className=" darkBG p-2 lightText text-xl scheme-dark"
                     >
                       ---

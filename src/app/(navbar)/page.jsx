@@ -23,6 +23,9 @@ const page = () => {
   const [focused, setFocused] = useState(false);
   const [focusedIdx, setFocusedIdx] = useState();
   const [pocket, setPocket] = useState([]);
+  const dialogRef = useRef(null);
+  const [showDialog, setShowDialog] = useState(false);
+
   const [state, convert] = useToPng({
     selector: "#capture-area",
     quality: 1,
@@ -219,6 +222,7 @@ const page = () => {
         setIsExporting={setIsExporting}
         downloadAllPng={downloadAllPng}
         onClickOutside={setClickOutside}
+        setShowDialog={setShowDialog}
       />
       <GeneratePosts
         TypeFace={typeFace}
@@ -232,6 +236,9 @@ const page = () => {
         index={idx}
         focusedIndex={focusedIdx}
         editRef={editRef}
+        dialogRef={dialogRef}
+        onShowDialog={setShowDialog}
+        showDialog={showDialog}
       />
     </div>
   );
