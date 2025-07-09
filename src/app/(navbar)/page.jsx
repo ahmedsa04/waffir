@@ -25,6 +25,7 @@ const page = () => {
   const [pocket, setPocket] = useState([]);
   const dialogRef = useRef(null);
   const [showDialog, setShowDialog] = useState(false);
+  const [fileData, setFileData] = useState([]);
 
   const [state, convert] = useToPng({
     selector: "#capture-area",
@@ -56,13 +57,12 @@ const page = () => {
 
   useEffect(() => {
     if (data) {
-      data.data.forEach((item) => {
-        // splice each item name to be no longer than 20 characters
-        if (item.name.length > 13) {
-          item.name = item.name.slice(0, 13);
-        }
-      });
+      console.log("Data received:", data);
       setItems(groupAndBalanceItems(data));
+    } else {
+      if (localStorage?.getItem("items")) {
+        setItems(JSON.parse(localStorage.getItem("items")));
+      }
     }
   }, [data]);
 
@@ -72,10 +72,10 @@ const page = () => {
     const categoryGroups = [];
     let currentCategory = null;
     let currentGroup = [];
-
     // STEP 1: Group items by category using marker in first item
     for (let i = 0; i < items.length; i++) {
       const item = Object.assign({}, items[i], prices[i]);
+
       if (currentCategory) {
         if (item.category_name == currentCategory) {
           currentGroup.push(item);
@@ -184,6 +184,34 @@ const page = () => {
   };
   {
   }
+  useEffect(() => {
+    if (pocket.length > 0) {
+      localStorage.setItem("pocket", JSON.stringify(pocket));
+    }
+  }, [pocket]);
+  useEffect(() => {
+    if (items) {
+      localStorage.setItem("items", JSON.stringify(items));
+    }
+  }, [items]);
+  useEffect(() => {
+    if (!items) {
+      if (JSON.parse(localStorage?.getItem("items"))) {
+        setItems(JSON.parse(localStorage.getItem("items")));
+      }
+    }
+    if (pocket.length == 0) {
+      if (JSON.parse(localStorage?.getItem("pocket"))) {
+        setPocket(JSON.parse(localStorage.getItem("pocket")));
+      }
+    }
+    if (dateFrom.length == 0) {
+      setDateFrom(localStorage.getItem("dateFrom")) || "";
+    }
+    if (dateTill.length == 0) {
+      setDateTill(localStorage.getItem("dateTill")) || "";
+    }
+  }, []);
   return (
     <div className=" relative w-full h-screen flex">
       <dialog
@@ -222,7 +250,6 @@ const page = () => {
         setIsExporting={setIsExporting}
         downloadAllPng={downloadAllPng}
         onClickOutside={setClickOutside}
-        setShowDialog={setShowDialog}
       />
       <GeneratePosts
         TypeFace={typeFace}
@@ -239,6 +266,8 @@ const page = () => {
         dialogRef={dialogRef}
         onShowDialog={setShowDialog}
         showDialog={showDialog}
+        fileData={fileData}
+        setFileData={setFileData}
       />
     </div>
   );

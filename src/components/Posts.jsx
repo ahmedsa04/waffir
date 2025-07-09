@@ -6,6 +6,10 @@ import arrowForward from "../../public/arrow_forward.svg";
 import arrowBack from "../../public/arrow_back.svg";
 import downloadAll from "../../public/download.svg";
 
+function formatNumberWithCommas(number) {
+  return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 export const Posts = ({
   items,
   setItems,
@@ -23,6 +27,7 @@ export const Posts = ({
   isExporting,
   downloadAllPng,
   setPocket,
+  pocket,
   currentExportIndex,
   onClickOutside,
 }) => {
@@ -56,7 +61,7 @@ export const Posts = ({
               <h1 className=" font-semibold  text-black text-lg ">من</h1>
             </div>
           </div>
-          <div className=" absolute top-32 left-1/2 transform -translate-x-1/2 px-4  py-2 bg-[#ffb120] rounded-full">
+          <div className=" absolute top-32 left-1/2 transform -translate-x-1/2 px-6 min-w-40  py-3 bg-[#ffb120] rounded-full">
             <h1
               className={`${typeFace.className} text-2xl text-nowrap text-black font-semibold text-center align-middle`}
             >
@@ -98,7 +103,7 @@ export const Posts = ({
                       key={index}
                       className={`
                   col-span-0 ${colSpan === 2 ? "col-span-2" : "col-span-1"}
-                   hover:cursor-pointer relative rounded-3xl w-full h-full bg-[#f9f9e7] text-black ${
+                   hover:cursor-pointer relative rounded-3xl w-full h-full bg-[#f9f9e7] text-black z-10 ${
                      focused && focusedIdx == index
                        ? "outline-[#537dc6] outline-3"
                        : ""
@@ -144,7 +149,7 @@ export const Posts = ({
                             setFocusedIdx(null);
                             setFocused(false);
                           }}
-                          className="absolute -top-2 -right-2 w-fit h-fit p-[1px] bg-[#f9f9e7] rounded-full"
+                          className="absolute -top-2 z-50 -right-2 w-fit h-fit p-[1px] bg-[#f9f9e7] rounded-full"
                         >
                           <Image
                             src={cancelIcon}
@@ -155,13 +160,13 @@ export const Posts = ({
                         </div>
                       )}
                       {/* card content stays the same */}
-                      <div className="flex justify-between pb-0 p-4">
+                      <div className=" absolute w-full top-0 flex gap-x-2 justify-between items-start pb-0 p-4">
                         <h1
                           className={`font-semibold ${
                             typeFace.className
-                          } bg-[#ffb120] my-auto p-0.5 px-2 rounded-4xl text-black ${
+                          } bg-[#ffb120] p-1 px-2 rounded-4xl text-black text-nowrap ${
                             count <= 2 || (count == 3 && index == 2)
-                              ? "text-2xl"
+                              ? "text-xl"
                               : "text-sm"
                           }`}
                         >
@@ -244,7 +249,7 @@ export const Posts = ({
                                 : "text-base"
                             } bg-[#116c39] rounded-ss-2xl`}
                           >
-                            {item.currentPrice}
+                            {formatNumberWithCommas(item.currentPrice)}
                           </h1>
                           <div className=" pl-4 flex justify-center rounded-ee-2xl bg-[#ffb120]">
                             <h1
@@ -254,7 +259,7 @@ export const Posts = ({
                                   : "text-base"
                               } rounded-ee-2xl bg-[#ffb120]`}
                             >
-                              {item.suggestedPrice}
+                              {formatNumberWithCommas(item.suggestedPrice)}
                             </h1>
                             <h1 className=" font-medium ml-2 text-black text-[10px] -rotate-90">
                               IQD

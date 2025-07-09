@@ -5,6 +5,7 @@ import CheckIcon from "../../public/check.svg";
 import * as XLSX from "xlsx";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { file } from "jszip";
 
 export const GeneratePosts = ({
   onDataChange,
@@ -21,7 +22,8 @@ export const GeneratePosts = ({
   dialogRef,
   onShowDialog,
   showDialog,
-  setShowDialog,
+  setFileData,
+  fileData,
 }) => {
   const [succeeded, setSucceded] = useState(false);
   const [barcodes, setbarcodes] = useState(false);
@@ -29,21 +31,6 @@ export const GeneratePosts = ({
   const [fileName, setFileName] = useState(null);
 
   const unit = ["G", "KG", "L", "ML", "PK"];
-  items && console.log(items[0].items[0]);
-  async function sendData() {
-    const { data, error } = await supabase.rpc("update_product_by_barcode", {
-      p_id: items[index].items[focusedIndex].id,
-      p_barcode: null,
-      p_name: items[index].items[focusedIndex].name,
-      p_unit: items[index].items[focusedIndex].unit,
-      p_metric: items[index].items[focusedIndex].metric,
-      p_image: null,
-      p_category_id: null,
-    });
-    if (error) {
-      console.error("❌ Error updating product:", error.message);
-    }
-  }
   function format(date) {
     var d = date.split("-");
     var str = "";
@@ -55,6 +42,23 @@ export const GeneratePosts = ({
     }
     return str;
   }
+  async function sendData() {
+    console.log(items[index].items[focusedIndex]);
+    const { data, error } = await supabase.rpc("update_product_by_barcode", {
+      p_id: items[index].items[focusedIndex].id,
+      p_barcode: null,
+      p_name: items[index].items[focusedIndex].name,
+      p_unit: items[index].items[focusedIndex].unit,
+      p_metric: items[index].items[focusedIndex].metric,
+      p_image: null,
+      p_category_id: null,
+    });
+    if (error) {
+      console.error("❌ Error updating product:", error.message);
+    } else {
+      console.log(data);
+    }
+  }
 
   function openFile(file, name) {
     var fileF = file.arrayBuffer();
@@ -63,7 +67,8 @@ export const GeneratePosts = ({
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
-      const formattedData = jsonData.slice(1); // Skip the first row if it's a headeri
+      const formattedData = jsonData;
+      console.log(formattedData);
       if (!formattedData[0]["الباركود "]) {
         onShowDialog(true);
         return;
@@ -76,23 +81,35 @@ export const GeneratePosts = ({
           };
         })
       );
-
       setbarcodes(formattedData.map((item) => item["الباركود "]));
+      setFileData(formattedData);
       setSucceded(true);
       setFileName(name);
+      localStorage.setItem("fileName", name);
     });
   }
   useEffect(() => {
     if (!barcodes || barcodes.length === 0) return;
 
     const fetchProducts = async () => {
-      const { data, error } = await supabase.rpc("get_products_by_barcodes", {
-        barcodes: barcodes,
-      });
+      console.log("Fetching products for barcodes:", barcodes);
+      console.log(fileData.map((row) => row["اسم المادة "]));
+      console.log(fileData.map((row) => row["القسم"] || "uncategorized"));
+      const { data, error } = await supabase.rpc(
+        "get_or_create_products_by_barcodes",
+        {
+          input_barcodes: barcodes,
+          input_names: fileData.map((row) => row["اسم المادة "] || "unnamed"),
+          input_categories: fileData.map(
+            (row) => row["القسم"] || "uncategorized"
+          ),
+        }
+      );
 
       if (error) {
         console.error("❌ Error fetching products:", error.message);
       } else {
+        console.log("Fetched products:", data);
         onDataChange({ data: data, prices: prices });
         // Do something with `data`
       }
@@ -111,6 +128,19 @@ export const GeneratePosts = ({
     }
   }, [showDialog]);
 
+  useEffect(() => {
+    //update file name to local storage file name if it exists
+    const storedFileName = localStorage.getItem("fileName");
+    if (storedFileName) {
+      setFileName(storedFileName);
+      setSucceded(true);
+    }
+  }, []);
+  useEffect(() => {
+    if (focusedIndex) {
+      sendData();
+    }
+  }, [items]);
   return (
     <div className=" relative w-1/2 h-full bg-[#1E1E1E] py-24 p-24">
       <dialog
@@ -137,38 +167,50 @@ export const GeneratePosts = ({
       <h1 className=" w-full grayText text-start text-lg font-medium py-2">
         Insert a file with the discounted product details{" "}
       </h1>
-      <label
-        htmlFor="file"
-        className=" flex max-w-32 h-fit darkBG rounded-xl cursor-pointer lightText text-lg  "
-      >
-        <h1 className="darkBG p-2 text-xl px-6 pr-12 rounded-2xl w-fit lightText font-light">
-          Insert
-        </h1>
-        <Image
-          src={FileIcon}
-          alt="file"
-          className=" w-7 h-7 -ml-10 my-auto mx-auto"
-        />
+      <div className="flex">
+        <label
+          htmlFor="file"
+          className=" flex max-w-32 h-fit darkBG rounded-xl cursor-pointer lightText text-lg  "
+        >
+          <h1 className="darkBG p-2 text-xl px-6 pr-12 rounded-2xl w-fit lightText font-light">
+            Insert
+          </h1>
+          <Image
+            src={FileIcon}
+            alt="file"
+            className=" w-7 h-7 -ml-10 my-auto mx-auto"
+          />
+          <input
+            type="file"
+            id="file"
+            hidden
+            content="Insert"
+            className=""
+            onChange={(e) => {
+              openFile(e.target.files[0], e.target.files[0].name);
+            }}
+          />
+        </label>
         {succeeded && (
-          <div className=" mx-10 my-auto  flex w-fit h-fit">
-            <h1 className=" grayText text-lg underline cursor-pointer font-light whitespace-nowrap">
-              {fileName}
+          <div className=" flex items-center">
+            <div className=" mx-10 my-auto  flex w-fit h-fit">
+              <h1 className=" grayText text-lg underline cursor-pointer font-light whitespace-nowrap">
+                {fileName}
+              </h1>
+              <Image src={CheckIcon} alt="Check" className=" w-7 h-7 ml-3" />
+            </div>
+            <h1
+              onClick={(e) => {
+                localStorage.clear();
+                location.reload();
+              }}
+              className=" darkBG  px-3 lightText hover:!text-red-900 text-base cursor-pointer rounded-lg font-medium whitespace-nowrap"
+            >
+              remove
             </h1>
-            <Image src={CheckIcon} alt="Check" className=" w-7 h-7 mx-3" />
           </div>
         )}
-        <input
-          type="file"
-          id="file"
-          hidden
-          content="Insert"
-          className=""
-          onChange={(e) => {
-            openFile(e.target.files[0], e.target.files[0].name);
-          }}
-        />
-      </label>
-
+      </div>
       <h1 className=" w-full grayText text-start text-lg font-medium pb-2 pt-6">
         Set discount period From - Untill
       </h1>
@@ -179,6 +221,10 @@ export const GeneratePosts = ({
             id="date"
             onChange={(e) => {
               onDateFromSet(format(e.target.value));
+              localStorage.setItem(
+                "dateFrom",
+                JSON.stringify(format(e.target.value))
+              );
             }}
             className="focus:outline-0 rounded-2xl darkBG p-3 lightText text-xl scheme-dark"
           />
@@ -197,6 +243,10 @@ export const GeneratePosts = ({
             id="date"
             onChange={(e) => {
               onDateTillSet(format(e.target.value));
+              localStorage.setItem(
+                "dateTill",
+                JSON.stringify(format(e.target.value))
+              );
             }}
             className="focus:outline-0 rounded-2xl darkBG p-3 lightText text-xl scheme-dark"
           />
@@ -249,29 +299,41 @@ export const GeneratePosts = ({
         <h1 className=" w-full grayText text-start text-lg font-medium pb-2 pt-6">
           Edit selected product details
         </h1>
-
-        <input
-          type="text"
-          id="text"
-          placeholder="Title"
-          value={
-            focusedIndex != null && items[index]?.items?.[focusedIndex]
-              ? items[index].items[focusedIndex].name
-              : ""
-          }
-          onChange={(e) => {
-            setItems((prevItems) => {
-              const updated = [...prevItems];
-              updated[index].items[focusedIndex] = {
-                ...updated[index].items[focusedIndex],
-                name: e.target.value,
-              };
-              return updated;
-            });
-            sendData();
-          }}
-          className=" rounded-2xl grayText darkBG p-3 lightText text-xl scheme-dark"
-        />
+        <div className=" flex">
+          <input
+            type="text"
+            id="text"
+            placeholder="Title"
+            value={
+              focusedIndex != null && items[index]?.items?.[focusedIndex]
+                ? items[index].items[focusedIndex].name
+                : ""
+            }
+            onChange={(e) => {
+              if (focusedIndex == null) return;
+              setItems((prevItems) => {
+                const updated = [...prevItems];
+                updated[index].items[focusedIndex] = {
+                  ...updated[index].items[focusedIndex],
+                  name: e.target.value,
+                };
+                return updated;
+              });
+            }}
+            className=" rounded-2xl grayText darkBG p-3 lightText text-xl scheme-dark"
+          />
+          <h1
+            className={`${
+              focusedIndex != null && items[index]?.items?.[focusedIndex]
+                ? "text-xl my-auto ml-4 rounded-xl darkBG p-3 px-6 w-fit grayText font-medium"
+                : ""
+            }`}
+          >
+            {focusedIndex != null &&
+              items[index]?.items?.[focusedIndex] &&
+              items[index].items[focusedIndex].barcode}
+          </h1>
+        </div>
         <div className="w-fit h-fit flex">
           <div>
             <h1 className=" w-full grayText text-start text-lg font-medium pb-2 pt-4">
@@ -286,6 +348,8 @@ export const GeneratePosts = ({
                   : 0
               }
               onChange={(e) => {
+                if (focusedIndex == null) return;
+
                 setItems((prevItems) => {
                   const updated = [...prevItems];
                   updated[index].items[focusedIndex] = {
@@ -311,6 +375,8 @@ export const GeneratePosts = ({
                   : 0
               }
               onChange={(e) => {
+                if (focusedIndex == null) return;
+
                 setItems((prevItems) => {
                   const updated = [...prevItems];
                   updated[index].items[focusedIndex] = {
@@ -330,7 +396,15 @@ export const GeneratePosts = ({
               Unit
             </h1>
             <select
-              onClick={(e) => {
+              value={
+                (focusedIndex != null &&
+                  items[index]?.items?.[focusedIndex] &&
+                  items[index].items[focusedIndex].unit) ||
+                "---"
+              }
+              onChange={(e) => {
+                if (focusedIndex == null) return;
+
                 setItems((prevItems) => {
                   const updated = [...prevItems];
                   updated[index].items[focusedIndex] = {
@@ -339,7 +413,6 @@ export const GeneratePosts = ({
                   };
                   return updated;
                 });
-                sendData();
               }}
               className=" max-w-28 hover:bg-neutral-500 h-11 darkBG rounded-2xl cursor-pointer lightText text-lg p-2"
             >
@@ -368,7 +441,14 @@ export const GeneratePosts = ({
             <input
               type="number"
               id="number3"
+              value={
+                focusedIndex != null && items[index]?.items?.[focusedIndex]
+                  ? items[index].items[focusedIndex].metric
+                  : 0
+              }
               onChange={(e) => {
+                if (focusedIndex == null) return;
+
                 setItems((prevItems) => {
                   const updated = [...prevItems];
                   updated[index].items[focusedIndex] = {
@@ -377,7 +457,6 @@ export const GeneratePosts = ({
                   };
                   return updated;
                 });
-                sendData();
               }}
               className=" max-w-24 rounded-2xl grayText darkBG p-2 lightText text-xl scheme-dark"
             />
