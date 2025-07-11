@@ -1,8 +1,6 @@
 "use client";
 import localFont from "next/font/local";
 import "../../(navbar)/globals.css";
-import { ApolloProvider } from "@apollo/client";
-import { client } from "@/lib/apollo-client";
 
 export const typeFace = localFont({
   src: [
