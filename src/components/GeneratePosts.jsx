@@ -137,7 +137,7 @@ export const GeneratePosts = ({
     }
   }, []);
   useEffect(() => {
-    if (focusedIndex) {
+    if (focusedIndex != null) {
       sendData();
     }
   }, [items]);

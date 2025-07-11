@@ -126,7 +126,7 @@ const page = () => {
           const current = chunks[i];
           const next = chunks[i + 1];
 
-          if (next.length < 4) {
+          if (next.items.length < 4) {
             const needed = 3 - next.length;
             const transferable = Math.min(current.length - 3, needed);
 
