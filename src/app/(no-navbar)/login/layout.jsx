@@ -45,5 +45,5 @@ export const typeFace = localFont({
 });
 
 export default function Layout({ children }) {
-  return <ApolloProvider client={client}>{children}</ApolloProvider>;
+  return <div>{children}</div>;
 }
